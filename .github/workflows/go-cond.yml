@@ -5,24 +5,40 @@ on:
     branches: [ master ]
 
 jobs:
-  deploy:
+  pr_check:
+    if: "!contains(github.event.pull_request.title, '[skip-checks]')"
     runs-on: ubuntu-latest
     steps:
-
-    - uses: actions/checkout@v4
-
+    - uses: actions/checkout@v3
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: '1.21'
+    - name: Lint
+      run: |
+        go install golang.org/x/lint/golint@latest
+        golint hi.go
+    - name: Test
+      run: go test -v hi.go
 
+  deploy:
+    needs: pr_check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
     - name: Build
       run: go build -v hi.go
-
     - name: Deploy to production
       if: github.event.pull_request.base.ref == 'master'
-      run: echo "Deploying to production"
-
+      run: |
+        echo "Deploying to production"
+        # Add your production deployment commands here
     - name: Deploy to staging
       if: github.event.pull_request.base.ref != 'master'
-      run: echo "Deploying to staging"
+      run: |
+        echo "Deploying to staging"
+        # Add your staging deployment commands here
